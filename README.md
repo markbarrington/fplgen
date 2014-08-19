@@ -6,3 +6,4 @@ Needs : A file "playerdata" in the format produced by fplscrape must exist in th
 
 Output : Terminal output that shows the best possible team found by the algorithm
 
+See also : https://github.com/markbarrington/fplscraper
