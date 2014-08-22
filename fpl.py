@@ -154,6 +154,9 @@ class fpl():
         if gameweek != 1:
             minutes += player['minutes'] * 2.0
             games += ((gameweek - 1) * 2.0)
+            if player['minutes'] == 0:
+                lap = lap / 10.0
+                twp = twp / 10.0
 
         # Calculate minutes per game
         if games == 0 or minutes == 0:

@@ -17,7 +17,7 @@ start = time()
 FitnessCalc.set_solution(1000)
 
 # Create the initial random population
-my_pop = Population(1000, True)
+my_pop = Population(10000, True)
 
 # Loop until number of generations is complete
 generation_count = 0
@@ -30,7 +30,7 @@ while my_pop.fitness_of_the_fittest() < FitnessCalc.get_max_fitness():
         my_pop.OutputFittest()
 
     # Quit after a set number of generations
-    if generation_count == 200:
+    if generation_count == 500:
         break
 
     # Output current generation data and produce next generation
