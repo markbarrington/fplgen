@@ -5,8 +5,9 @@ import random
 from operator import itemgetter
 
 # Configuration values for this GameWeek
-gameweek = 2
+gameweek = 3
 transfersavailable = 1
+currentteamvalue = 998
 
 # Global variables
 
@@ -23,7 +24,7 @@ playmax = [1,5,5,3]
 # Configuration values for rules
 
 squadsize = 15
-budget = 1000
+budget = currentteamvalue
 maxperteam = 3
 
 # Configuration values for scoring
@@ -154,7 +155,7 @@ class fpl():
         if gameweek != 1:
             minutes += player['minutes'] * 2.0
             games += ((gameweek - 1) * 2.0)
-            if player['minutes'] == 0:
+            if player['minutes'] < (gameweek -1) * 60:
                 lap = lap / 10.0
                 twp = twp / 10.0
 
