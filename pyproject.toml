@@ -1,0 +1,10 @@
+[project]
+name = "fplgen"
+version = "0.1.0"
+description = "Genetic algorithm for building Fantasy Premier League teams."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.pytest.ini_options]
+pythonpath = ["code"]

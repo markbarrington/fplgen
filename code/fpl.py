@@ -1,10 +1,8 @@
-import Individual
-
 import json
-import codecs
 import random
 import csv
 
+from paths import data_file
 from strength import teamstrength
 
 from operator import itemgetter
@@ -359,18 +357,19 @@ class fpl():
     def getplayerdata():
         global players, fixtures
 
-        output = codecs.open('playerkeydata','w','utf-8-sig')
-        p = open('playerdata','r')
-        players = json.load(p)
+        players = []
+        fixtures = []
 
-        pl = open("playerlast10.csv","rb")
-        playerslast10 = csv.reader(pl)
+        with open(data_file('playerdata'), 'r', encoding='utf-8') as p:
+            players = json.load(p)
+
+        with open(data_file("playerlast10.csv"), "r", encoding='utf-8-sig', newline='') as pl:
+            playerslast10 = list(csv.reader(pl))
 
         for player in players:
             found = False
-            pl.seek(0)
             for playerlast in playerslast10:
-                if playerlast[1] == str(player['code']):
+                if len(playerlast) > 10 and playerlast[1] == str(player['code']):
                     player['home'] = float(playerlast[7])
                     player['homegames'] = int(playerlast[8])
                     player['away'] = float(playerlast[9])
@@ -382,10 +381,11 @@ class fpl():
                 player['homegames'] = 0
                 player['awaygames'] = 0
 
-        f = open('fixturedata','r')
+        with open(data_file('fixturedata'), 'r', encoding='utf-8') as f:
+            for line in f:
+                fixtures.append(json.loads(line))
 
-        for line in f:
-            fixtures.append(json.loads(line))
+        output = open(data_file('playerkeydata', for_write=True), 'w', encoding='utf-8-sig')
 
         for player in players:
 
@@ -417,7 +417,6 @@ class fpl():
                 playerdata += "," + str(player[str(week)])
             output.write(playerdata + '\n')
 
-        f.close()
         output.close()
 
     # Generate a four week lookahead score for a player

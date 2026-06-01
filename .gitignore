@@ -16,6 +16,8 @@ env/
 .DS_Store
 
 # Local data files generated or supplied outside source control
+data/*
+!data/.gitkeep
 playerdata
 playerkeydata
 fixturedata
