@@ -1,0 +1,26 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+
+# Local virtual environments
+.venv/
+venv/
+env/
+
+# Test and tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS/editor metadata
+.DS_Store
+
+# Local data files generated or supplied outside source control
+playerdata
+playerkeydata
+fixturedata
+playerlast10.csv
+code/playerdata
+code/playerkeydata
+code/fixturedata
+code/playerlast10.csv
