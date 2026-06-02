@@ -350,65 +350,156 @@ class fpl():
 
     bank = 0.0
 
-    # Read the playerdata into the player global variable.
-    # Output a playerkeydata file
-    # Generate the four week lookahead score for each player
     @staticmethod
-    def getplayerdata():
-        global players, fixtures
+    def fplreview_gameweek_columns(fieldnames):
+        columns = {}
+        missing = []
+        for week in range(gameweek, gameweek + forecastweeks):
+            candidates = [
+                "%s_Pts" % week,
+                "GW%s_Pts" % week,
+                "GW%s Pts" % week,
+                "%s_PTS" % week,
+                "GW%s_PTS" % week,
+            ]
+            found = None
+            for candidate in candidates:
+                if candidate in fieldnames:
+                    found = candidate
+                    break
+            if found is None:
+                missing.append("%s_Pts" % week)
+            else:
+                columns[week - gameweek + 1] = found
 
+        if missing:
+            raise ValueError(
+                "Missing required fplreview gameweek columns: %s" % ", ".join(missing)
+            )
+
+        return columns
+
+    @staticmethod
+    def fplreview_price(value):
+        price = float(value)
+        if price <= 20:
+            price *= 10
+        return int(round(price))
+
+    @staticmethod
+    def fplreview_position(value):
+        position = str(value).strip().lower()
+        positions = {
+            "1": 1,
+            "gk": 1,
+            "gkp": 1,
+            "goalkeeper": 1,
+            "2": 2,
+            "def": 2,
+            "defender": 2,
+            "3": 3,
+            "mid": 3,
+            "midfielder": 3,
+            "4": 4,
+            "fwd": 4,
+            "for": 4,
+            "forward": 4,
+        }
+        if position not in positions:
+            raise ValueError("Unknown fplreview position: %s" % value)
+        return positions[position]
+
+    @staticmethod
+    def fplreview_team(value):
+        global teamid
+
+        team_name = str(value).strip()
+        for existing_id, existing_name in teamid.items():
+            if existing_name.lower() == team_name.lower():
+                return int(existing_id), existing_name
+
+        next_id = max(int(existing_id) for existing_id in teamid.keys()) + 1
+        teamid[str(next_id)] = team_name
+        return next_id, team_name
+
+    @staticmethod
+    def map_fplreview_rows(rows, fieldnames):
+        required = ["Pos", "ID", "Name", "BV", "SV", "Team"]
+        missing = [field for field in required if field not in fieldnames]
+        if missing:
+            raise ValueError("Missing required fplreview columns: %s" % ", ".join(missing))
+
+        point_columns = fpl.fplreview_gameweek_columns(fieldnames)
         players = []
-        fixtures = []
+        for row in rows:
+            players.append(fpl.map_fplreview_player(row, point_columns))
+        return players
 
-        with open(data_file('playerdata'), 'r', encoding='utf-8') as p:
-            players = json.load(p)
+    @staticmethod
+    def map_fplreview_player(row, point_columns):
+        player_id = int(row["ID"])
+        element_type = fpl.fplreview_position(row["Pos"])
+        team, team_name = fpl.fplreview_team(row["Team"])
+        now_cost = fpl.fplreview_price(row["BV"])
+        sellprice = fpl.fplreview_price(row["SV"])
 
-        with open(data_file("playerlast10.csv"), "r", encoding='utf-8-sig', newline='') as pl:
-            playerslast10 = list(csv.reader(pl))
+        player = {
+            "id": player_id,
+            "code": player_id,
+            "second_name": row["Name"],
+            "web_name": row["Name"],
+            "team": team,
+            "team_name": team_name,
+            "element_type": element_type,
+            "type_name": playertypes[element_type - 1],
+            "now_cost": now_cost,
+            "sellprice": sellprice,
+            "status": "a",
+            "picked": False,
+            "minutes": 0,
+            "total_points": 0,
+            "tsp": 0,
+            "home": 0,
+            "away": 0,
+            "homegames": 0,
+            "awaygames": 0,
+            "otherteams": ["NONE"] * forecastweeks,
+        }
 
-        for player in players:
-            found = False
-            for playerlast in playerslast10:
-                if len(playerlast) > 10 and playerlast[1] == str(player['code']):
-                    player['home'] = float(playerlast[7])
-                    player['homegames'] = int(playerlast[8])
-                    player['away'] = float(playerlast[9])
-                    player['awaygames'] = int(playerlast[10])
-                    found = True
-            if found == False:
-                player['home'] = 0
-                player['away'] = 0
-                player['homegames'] = 0
-                player['awaygames'] = 0
+        lookahead = 0
+        for week, column in point_columns.items():
+            points = float(row[column])
+            player[str(week)] = points
+            lookahead += points
 
-        with open(data_file('fixturedata'), 'r', encoding='utf-8') as f:
-            for line in f:
-                fixtures.append(json.loads(line))
+        player["thisweekpoints"] = player["1"]
+        player["lookaheadpoints"] = lookahead
+        player["ppg"] = lookahead / float(forecastweeks)
+        player["total_points"] = lookahead
+        player["tsp"] = lookahead
 
+        return player
+
+    @staticmethod
+    def load_fplreview_players(filename):
+        with open(filename, "r", encoding="utf-8-sig", newline="") as csvfile:
+            reader = csv.DictReader(csvfile)
+            if reader.fieldnames is None:
+                raise ValueError("fplreview CSV has no header row")
+            rows = list(reader)
+            return fpl.map_fplreview_rows(rows, reader.fieldnames)
+
+    @staticmethod
+    def write_playerkeydata(loaded_players):
         output = open(data_file('playerkeydata', for_write=True), 'w', encoding='utf-8-sig')
 
-        for player in players:
-
-            player['picked'] = False
-            player['sellprice'] = player['now_cost']
-            player['team_name'] = teamid[str(player['team'])]
-
-            # Generate the four week lookahead score for the player
-            fpl.lookaheadpoints(player, gameweek)
-
-            # Zero out the scores for unavailable players
-
-            if player['status'] != 'a':
-                for week in range(gameweek, gameweek+forecastweeks):
-                    player[str(week-gameweek+1)] = 0
-
-            # Output key data for inspection to a file
+        for player in loaded_players:
             playerdata = player['second_name']
             playerdata += "," + str(player['total_points'])
             playerdata += "," + str(player['minutes'])
             playerdata += "," + str(player['tsp'])
             playerdata += "," + str(player['now_cost'])
-            playerdata += "," + teamid[str(player['team'])]
+            playerdata += "," + player['team_name']
             playerdata += "," + playertype[str(player['element_type'])]
             playerdata += "," + str(player['lookaheadpoints'])
             playerdata += "," + str(player['thisweekpoints'])
@@ -418,6 +509,18 @@ class fpl():
             output.write(playerdata + '\n')
 
         output.close()
+
+    # Read the fplreview export into the player global variable.
+    # Output a playerkeydata inspection file.
+    @staticmethod
+    def getplayerdata():
+        global players, fixtures
+
+        fixtures = []
+        imported_players = fpl.load_fplreview_players(data_file('fplreview.csv'))
+
+        players = imported_players
+        fpl.write_playerkeydata(players)
 
     # Generate a four week lookahead score for a player
     @staticmethod

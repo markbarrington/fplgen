@@ -2,7 +2,7 @@
 
 Genetic algorithm for building English Premier League Fantasy Football teams.
 
-The project imports Fantasy Premier League player and fixture data, estimates player scores across upcoming gameweeks, and searches for a high-scoring valid squad.
+The project imports fplreview.com player projection exports and searches for a high-scoring valid squad.
 
 ## Quick start
 
@@ -12,15 +12,15 @@ python3 code/GA.py
 
 ## Data files
 
-Runtime data is intentionally kept out of Git. Put these files in `data/`:
+Runtime data is intentionally kept out of Git. Export projections from fplreview.com and save the CSV as:
 
-- `playerdata`: JSON player data in the format produced by `fplscraper`
-- `fixturedata`: one JSON fixture record per line
-- `playerlast10.csv`: recent player home/away scoring data
+```text
+data/fplreview.csv
+```
 
-The loader also checks the current working directory and `code/` for backwards compatibility with the original layout.
+FPLgen uses the configured gameweek columns from the export as the expected score for each player. Those values are loaded directly; FPLgen does not apply additional projection adjustments for strength of schedule, home/away splits, availability, or expected minutes.
 
-The run writes `data/playerkeydata`, a generated inspection file with player scoring inputs and projections.
+The run writes `data/playerkeydata`, a generated inspection file showing the imported scoring values used by the optimizer.
 
 ## Development
 
@@ -30,12 +30,6 @@ Run the syntax and smoke checks with:
 python3 -m py_compile code/*.py
 python3 -m unittest discover -s tests
 ```
-
-## Related project
-
-Input data can be produced by:
-
-https://github.com/markbarrington/fplscraper
 
 ## Credits
 
