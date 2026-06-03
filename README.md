@@ -10,6 +10,22 @@ The project imports fplreview.com player projection exports and searches for a h
 python3 code/GA.py
 ```
 
+The default run preserves the original production-sized search settings. For a
+short deterministic development run, pass explicit controls:
+
+```sh
+python3 code/GA.py --input tests/fixtures/fplreview_golden.csv --population 6 --generations 2 --seed 7
+```
+
+Useful runtime options include:
+
+- `--input`: fplreview CSV export path
+- `--population`: GA population size
+- `--generations`: maximum generation count
+- `--seed`: random seed for reproducible runs
+- `--gameweek`: first gameweek projection column to load
+- `--forecastweeks`: number of gameweeks to load
+
 ## Data files
 
 Runtime data is intentionally kept out of Git. Export projections from fplreview.com and save the CSV as:
