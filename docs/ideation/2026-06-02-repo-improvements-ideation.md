@@ -226,12 +226,12 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 ## Recommendation
 
-Ideas 1, 2, and 3 have shipped: FPLgen now imports a single fplreview.com CSV, has a synthetic golden fixture that proves import, known-squad scoring, and a tiny seeded GA path, and exposes a configurable GA runner for short deterministic runs.
+Ideas 1, 2, 3, and 4 have shipped: FPLgen now imports a single fplreview.com CSV, has a synthetic golden fixture that proves import, known-squad scoring, and a tiny seeded GA path, exposes a configurable GA runner for short deterministic runs, and includes a historical theFPLkiwi projection fixture for realistic projection-row tests.
 
-The next improvement wave should focus on Ideas 4, 5, and 7:
+The next improvement wave should focus on Ideas 5 and 7, with Idea 6 becoming more useful once the realistic state and scoring-rule fixtures are in place:
 
-1. Add a pinned theFPLkiwi projection fixture converted to fplreview-style CSV.
-2. Add a pinned fplcache `bootstrap-static` fixture for realistic player/team mapping.
-3. Cover the scoring and transfer rules that matter most.
+1. Add a pinned fplcache `bootstrap-static` fixture for realistic player/team mapping.
+2. Cover the scoring and transfer rules that matter most.
+3. Add deterministic optimizer health metrics after the realistic fixture base is broader.
 
 Those moves create enough safety to tackle the larger architectural improvements: boundary-first refactor, context object, and validity repair.

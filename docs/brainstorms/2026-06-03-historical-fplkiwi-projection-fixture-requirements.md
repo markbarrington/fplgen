@@ -1,6 +1,8 @@
 ---
 date: 2026-06-03
 topic: historical-fplkiwi-projection-fixture
+status: completed
+pr: https://github.com/markbarrington/fplgen/pull/7
 ---
 
 # Historical theFPLkiwi Projection Fixture Requirements
