@@ -231,7 +231,7 @@ The importer is the compatibility layer. Everything downstream should see ordina
 
 - Current-squad import, manager-team sync, and replacement of hard-coded current-squad behavior.
 - CLI input configuration, random seed controls, and generation-limit controls.
-- End-to-end GA smoke testing from a full fplreview fixture.
+- End-to-end GA smoke testing from a full fplreview fixture; this is covered by the completed golden fplreview fixture validation plan.
 - Cleanup or deletion of old projection helpers after the new import path is stable.
 
 ### Out of Scope

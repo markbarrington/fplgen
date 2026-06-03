@@ -4,6 +4,7 @@ type: feat
 status: completed
 date: 2026-06-02
 origin: docs/brainstorms/2026-06-02-golden-fplreview-fixture-requirements.md
+pr: https://github.com/markbarrington/fplgen/pull/4
 ---
 
 # feat: Add Golden fplreview Fixture Validation
@@ -11,6 +12,10 @@ origin: docs/brainstorms/2026-06-02-golden-fplreview-fixture-requirements.md
 ## Summary
 
 Add a synthetic golden fplreview fixture and end-to-end characterization tests that prove FPLgen can still import projection data, validate and score a known legal squad, and run a tiny seeded GA evolution path. Keep the work focused on safety-check validation, with only small testability seams allowed.
+
+## Outcome
+
+Implemented in PR https://github.com/markbarrington/fplgen/pull/4. The shipped fixture and tests cover import, balanced player-pool validation, known legal squad scoring, and a tiny seeded GA evolution smoke path. Verification command: `python3 -m unittest discover -s tests`.
 
 ---
 
