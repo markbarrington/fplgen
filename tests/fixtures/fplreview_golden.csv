@@ -1,0 +1,23 @@
+Pos,ID,Name,BV,SV,Team,3_Pts,4_Pts,5_Pts,6_Pts,7_Pts,8_Pts
+GKP,201,Golden Keeper A,4.5,4.5,Arsenal,4.0,4.1,4.2,4.3,4.4,4.5
+GKP,202,Golden Keeper B,4.0,4.0,Bournemouth,3.0,3.1,3.2,3.3,3.4,3.5
+GKP,203,Golden Keeper Bench,4.0,4.0,Burnley,1.0,1.0,1.1,1.1,1.2,1.2
+DEF,204,Golden Defender A,5.0,5.0,Chelsea,5.0,5.1,5.2,5.3,5.4,5.5
+DEF,205,Golden Defender B,4.8,4.8,Crystal Palace,4.7,4.8,4.9,5.0,5.1,5.2
+DEF,206,Golden Defender C,4.7,4.7,Everton,4.5,4.6,4.7,4.8,4.9,5.0
+DEF,207,Golden Defender D,4.6,4.6,Hull,4.3,4.4,4.5,4.6,4.7,4.8
+DEF,208,Golden Defender E,4.5,4.5,Leicester,4.1,4.2,4.3,4.4,4.5,4.6
+DEF,209,Golden Defender Bench,4.0,4.0,Liverpool,1.2,1.1,1.2,1.1,1.2,1.1
+DEF,210,Golden Defender Depth,4.1,4.1,Man City,2.0,2.1,2.0,2.1,2.0,2.1
+MID,211,Golden Midfielder A,8.0,8.0,Man Utd,7.0,7.1,7.2,7.3,7.4,7.5
+MID,212,Golden Midfielder B,7.5,7.5,Middlesbrough,6.5,6.6,6.7,6.8,6.9,7.0
+MID,213,Golden Midfielder C,7.0,7.0,Southampton,6.0,6.1,6.2,6.3,6.4,6.5
+MID,214,Golden Midfielder D,6.5,6.5,Stoke,5.5,5.6,5.7,5.8,5.9,6.0
+MID,215,Golden Midfielder E,6.0,6.0,Sunderland,5.0,5.1,5.2,5.3,5.4,5.5
+MID,216,Golden Midfielder Bench,4.5,4.5,Swansea,1.0,1.1,1.0,1.1,1.0,1.1
+MID,217,Golden Midfielder Depth,5.0,5.0,Spurs,2.0,2.1,2.2,2.3,2.4,2.5
+FWD,218,Golden Forward A,7.5,7.5,Watford,6.2,6.3,6.4,6.5,6.6,6.7
+FWD,219,Golden Forward B,7.0,7.0,West Brom,5.8,5.9,6.0,6.1,6.2,6.3
+FWD,220,Golden Forward C,6.5,6.5,West Ham,5.4,5.5,5.6,5.7,5.8,5.9
+FWD,221,Golden Forward Bench,4.5,4.5,Arsenal,1.0,1.0,1.1,1.1,1.2,1.2
+FWD,222,Golden Forward Depth,5.0,5.0,Bournemouth,2.0,2.1,2.2,2.3,2.4,2.5
