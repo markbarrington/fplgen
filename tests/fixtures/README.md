@@ -8,6 +8,8 @@ Small importer fixture for focused fplreview column-mapping and validation tests
 
 Synthetic fplreview-style fixture with enough players to prove import, known-squad scoring, and a tiny seeded GA smoke path. This is validation data, not a real projection-quality sample.
 
+The committed `examples/scenario_template.json` uses player IDs from this fixture so tests and development commands have an editable scenario that validates without relying on private runtime data.
+
 ## `fplkiwi_historical.csv`
 
 Historical projection-row fixture converted from theFPLkiwi data into FPLgen's fplreview-style CSV shape.

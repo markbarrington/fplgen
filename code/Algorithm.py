@@ -22,7 +22,11 @@ class Algorithm():
         #if generation % 100 == 0:
         #    Algorithm.Mutation_rate *= 1.5
 
-        new_population = Population(population_passed.size(), False)
+        new_population = Population(
+            population_passed.size(),
+            False,
+            scenario=population_passed.scenario,
+        )
 
         # If Elitism is enabled then copy the best scoring individual to the next generation
         if Algorithm.Elitism:
@@ -45,7 +49,7 @@ class Algorithm():
         Algorithm.Mutated = 0
         for i in range(elitism_off_set, population_passed.size()):
             #print "Mutate Index ", i
-            Algorithm.mutate(new_population.get_individual(i))
+            Algorithm.mutate(new_population.get_individual(i), scenario=population_passed.scenario)
 
         #print("Mutated %s" % Algorithm.Mutated)
 
@@ -68,7 +72,7 @@ class Algorithm():
     # Perform Crossover - Single Split
     @staticmethod
     def crossover(individual1_passed, individual2_passed):
-        new_sol = Individual()
+        new_sol = Individual([None] * individual1_passed.size())
         for i in range(0,individual1_passed.size()):
             if random() <= Algorithm.Uniform_rate:
                 new_sol.set_gene(i, individual1_passed.get_gene(i))
@@ -79,11 +83,12 @@ class Algorithm():
 
     # Apply random mutation to individual
     @staticmethod
-    def mutate(individual_passed):
+    def mutate(individual_passed, scenario=None):
         mutated = False
         #print "Gene Size ", individual_passed.size()
         # players
-        for i in range(0,individual_passed.size()-2):
+        start_index = 15 if scenario is not None else 0
+        for i in range(start_index,individual_passed.size()-2):
             if random() <= Algorithm.Mutation_rate:
                 gene = fpl.getrandomplayer(individual_passed.get_gene(i))
                 individual_passed.set_gene(i, gene)
@@ -127,4 +132,3 @@ class Algorithm():
 
         fittest = tournament.get_fittest(False)
         return fittest
-

@@ -9,6 +9,7 @@ from FitnessCalc import FitnessCalc
 from Population import Population
 from fpl import fpl
 from paths import DATA_DIR
+from scenario import validate_scenario_file
 
 
 DEFAULT_POPULATION_SIZE = 10000
@@ -36,6 +37,12 @@ def parse_args(args=None):
         type=Path,
         default=DEFAULT_INPUT,
         help="Path to a fplreview CSV export.",
+    )
+    parser.add_argument(
+        "--scenario",
+        type=Path,
+        default=None,
+        help="Path to an existing-squad scenario JSON file.",
     )
     parser.add_argument(
         "--population",
@@ -81,6 +88,7 @@ def apply_runtime_options(seed=None, gameweek=None, forecastweeks=None):
 
 def run(
     input_path=DEFAULT_INPUT,
+    scenario_path=None,
     population_size=DEFAULT_POPULATION_SIZE,
     generation_limit=DEFAULT_GENERATION_LIMIT,
     seed=None,
@@ -95,11 +103,30 @@ def run(
     fpl.getplayerdata(input_path)
     print("Player data imported")
 
+    scenario = None
+    if scenario_path is None and gameweek != 1:
+        raise ValueError("Scenario file is required for non-GW1 runs")
+    if scenario_path is not None:
+        scenario = validate_scenario_file(
+            scenario_path,
+            fpl_module.players,
+            configured_gameweek=gameweek,
+        )
+        print(
+            "Existing squad scenario: gameweek %s, bank %.1f, saved free transfers %s, source %s"
+            % (
+                scenario.gameweek,
+                scenario.bank / 10.0,
+                scenario.saved_free_transfers,
+                scenario.source,
+            )
+        )
+
     start = time()
     FitnessCalc.set_solution(max_fitness)
 
     print("Creating intial population")
-    my_pop = Population(population_size, True)
+    my_pop = Population(population_size, True, scenario=scenario)
     print("Population created")
 
     generation_count = 0
@@ -131,6 +158,7 @@ def run(
         "generation_count": generation_count,
         "fittest_score": fittest_score,
         "elapsed": finish - start,
+        "scenario": scenario,
     }
 
 
@@ -138,6 +166,7 @@ def main(args=None):
     options = parse_args(args)
     run(
         input_path=options.input,
+        scenario_path=options.scenario,
         population_size=options.population,
         generation_limit=options.generations,
         seed=options.seed,

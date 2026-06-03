@@ -4,20 +4,21 @@ from fpl import fpl
 
 class Population():
 
-    def __init__(self, population_size, initialise):
+    def __init__(self, population_size, initialise, scenario=None):
         self.individuals = []
+        self.scenario = scenario
 
         #Creates the individuals
         if (initialise):
             for i in range(population_size):
-                new_individual = Individual()
+                new_individual = Individual(fpl.generateteam(scenario=scenario))
                 self.individuals.append(new_individual)
 
     # Determine the fitness of an individual
     def get_fitness(self, individual_passed):
         fitness = individual_passed.get_score()
         if fitness == -1:
-            fitness = fpl.scoreteam(individual_passed.genes)
+            fitness = fpl.scoreteam(individual_passed.genes, scenario=self.scenario)
             individual_passed.set_score(fitness)
         return fitness
 
@@ -67,4 +68,4 @@ class Population():
     # Output the fittest individual in a population
     def OutputFittest(self):
         fittest = self.get_fittest()
-        return fpl.scoreteam(fittest.genes,True)
+        return fpl.scoreteam(fittest.genes, True, scenario=self.scenario)

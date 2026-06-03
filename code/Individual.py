@@ -1,7 +1,3 @@
-from random import randint
-from FitnessCalc import FitnessCalc
-from fpl import fpl
-
 # Each individual represents a team
 class Individual():
 
@@ -9,11 +5,9 @@ class Individual():
     DefaultGeneLength = 15 + 3
 
     # Initialise an individual
-    def __init__(self):
-        self.genes = []
+    def __init__(self, genes=None):
+        self.genes = genes or []
         self.geneScore = -1
-
-        self.genes = fpl.generateteam()		
 
     # Get an individual player from a team
     def get_gene(self, index):
