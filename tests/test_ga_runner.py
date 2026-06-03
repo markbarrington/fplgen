@@ -11,6 +11,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CODE_DIR = PROJECT_ROOT / "code"
 FIXTURE = PROJECT_ROOT / "tests" / "fixtures" / "fplreview_golden.csv"
+FPLKIWI_FIXTURE = PROJECT_ROOT / "tests" / "fixtures" / "fplkiwi_historical.csv"
 if str(CODE_DIR) not in sys.path:
     sys.path.insert(0, str(CODE_DIR))
 
@@ -157,6 +158,26 @@ class GARunnerTests(unittest.TestCase):
         self.assertEqual(fpl_module.gameweek, ga_module.DEFAULT_GAMEWEEK)
         self.assertEqual(fpl_module.forecastweeks, ga_module.DEFAULT_FORECASTWEEKS)
         self.assertIn("6", fpl_module.players[0])
+
+    def test_runner_completes_with_fplkiwi_historical_fixture(self):
+        with redirect_stdout(io.StringIO()):
+            result = ga_module.run(
+                input_path=FPLKIWI_FIXTURE,
+                population_size=10,
+                generation_limit=1,
+                seed=1,
+                gameweek=18,
+                forecastweeks=6,
+            )
+
+        self.assertGreater(result["fittest_score"], 0)
+        self.assertEqual(result["generation_count"], 1)
+        self.assertEqual(len(fpl_module.players), 461)
+        self.assertEqual(fpl_module.gameweek, 18)
+        self.assertEqual(fpl_module.forecastweeks, 6)
+        self.assertEqual(fpl_module.players[0]["id"], 113)
+        self.assertAlmostEqual(fpl_module.players[0]["6"], 3.309606969)
+        self.assertTrue((self.data_dir / "playerkeydata").exists())
 
 
 if __name__ == "__main__":
