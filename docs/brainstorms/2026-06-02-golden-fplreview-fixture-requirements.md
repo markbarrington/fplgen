@@ -1,6 +1,8 @@
 ---
 date: 2026-06-02
 topic: golden-fplreview-fixture
+status: completed
+pr: https://github.com/markbarrington/fplgen/pull/4
 ---
 
 # Requirements: Golden fplreview Fixture

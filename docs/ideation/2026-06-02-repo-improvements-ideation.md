@@ -13,7 +13,7 @@ FPLgen is a small Python project for generating Fantasy Premier League squads wi
 
 The README now documents the preferred runtime input: a single projection CSV at `data/fplreview.csv`. The older runtime path used three files under `data/`: `playerdata`, `fixturedata`, and `playerlast10.csv`. Runtime data is intentionally not committed. The repo is old enough that the Fantasy Premier League APIs and surrounding data ecosystem have changed since the original implementation, so preserving the old scraper-shaped data contract is less useful than moving to a current import path.
 
-The preferred data direction is to import from a single file exported from fplreview.com. Current tests cover path resolution, a few `validteam()` cases, and a tiny fplreview-style CSV import fixture, but they do not yet exercise enough projection, scoring, transfer, or GA evolution behavior.
+The preferred data direction is to import from a single file exported from fplreview.com. Current tests cover path resolution, a few `validteam()` cases, fplreview CSV import mapping, a synthetic golden fplreview fixture, known legal squad scoring, and a tiny seeded GA smoke path. They do not yet exercise enough transfer, chip, scoring edge-case, or real-export behavior.
 
 Notable constraints and pain points:
 
@@ -68,7 +68,7 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 ### 2. Build a Golden fplreview.com Import Fixture
 
-**Description:** Add a small representative fplreview.com export under `tests/fixtures/` and use it to test import, normalization, projection fields, unavailable or low-minutes players, and a known legal squad. Keep synthetic data in the same column shape as the real export rather than recreating the old `playerdata`/`fixturedata`/`playerlast10.csv` trio. The minimal practical corpus should include roughly 28 players: 4 goalkeepers, 8 defenders, 10 midfielders, and 6 forwards across 10 to 12 clubs, with six projection columns covering the configured gameweek window.
+**Description:** Add a small representative fplreview.com export under `tests/fixtures/` and use it to test import, normalization, projection fields, low-projection players, a known legal squad, and a tiny seeded GA smoke path. Keep synthetic data in the same column shape as the real export rather than recreating the old `playerdata`/`fixturedata`/`playerlast10.csv` trio.
 
 **Axis:** Data contract and fixtures
 
@@ -76,13 +76,13 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 **Rationale:** A golden fixture lets the project change data import without guessing. It should also become the safety net for scoring and GA smoke tests.
 
-**Downsides:** Needs either a committed sanitized sample or a generator that faithfully mimics the export columns. It also needs enough players per position and club to avoid random team-generation retry loops.
+**Downsides:** The shipped fixture is synthetic and intentionally compact, so it proves wiring and characterization behavior rather than real projection quality or full optimizer robustness.
 
 **Confidence:** 93%
 
 **Complexity:** Medium
 
-**Status:** Unexplored
+**Status:** Shipped
 
 ### 3. Add a Reproducible, Configurable GA Runner
 
@@ -226,12 +226,13 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 ## Recommendation
 
-Start with Ideas 2, 3, 4, 5, and 7 as the first improvement wave:
+Ideas 1 and 2 have shipped: FPLgen now imports a single fplreview.com CSV and has a synthetic golden fixture that proves import, known-squad scoring, and a tiny seeded GA path.
 
-1. Expand the golden fplreview.com import fixture into a small deterministic corpus.
-2. Add deterministic short-run controls to the GA entrypoint.
-3. Add a pinned theFPLkiwi projection fixture converted to fplreview-style CSV.
-4. Add a pinned fplcache `bootstrap-static` fixture for realistic player/team mapping.
-5. Cover the scoring and transfer rules that matter most.
+The next improvement wave should focus on Ideas 3, 4, 5, and 7:
+
+1. Add deterministic short-run controls to the GA entrypoint.
+2. Add a pinned theFPLkiwi projection fixture converted to fplreview-style CSV.
+3. Add a pinned fplcache `bootstrap-static` fixture for realistic player/team mapping.
+4. Cover the scoring and transfer rules that matter most.
 
 Those moves create enough safety to tackle the larger architectural improvements: boundary-first refactor, context object, and validity repair.

@@ -96,7 +96,7 @@ flowchart TB
 
 - Current-squad import, manager-team sync, and replacement of hard-coded current-squad behavior are deferred.
 - CLI input configuration, random seed controls, and generation-limit controls are deferred.
-- End-to-end GA smoke testing from a full fplreview fixture is deferred.
+- End-to-end GA smoke testing moved to the separate golden fplreview fixture item, now completed in PR https://github.com/markbarrington/fplgen/pull/4.
 - Refactoring the optimizer around a new projection model is out of scope for this change.
 - Live FPL API integration is out of scope for this change.
 
