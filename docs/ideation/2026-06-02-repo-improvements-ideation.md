@@ -11,26 +11,32 @@ mode: repo-grounded
 
 FPLgen is a small Python project for generating Fantasy Premier League squads with a genetic algorithm. The core behavior is concentrated in `code/fpl.py`, with GA orchestration in `code/GA.py`, `code/Algorithm.py`, `code/Population.py`, and `code/Individual.py`.
 
-The README documents three runtime inputs under `data/`: `playerdata`, `fixturedata`, and `playerlast10.csv`. These files are intentionally not committed. The repo is old enough that the Fantasy Premier League APIs and surrounding data ecosystem have changed since the original implementation, so preserving the old scraper-shaped data contract is less useful than moving to a current import path.
+The README now documents the preferred runtime input: a single projection CSV at `data/fplreview.csv`. The older runtime path used three files under `data/`: `playerdata`, `fixturedata`, and `playerlast10.csv`. Runtime data is intentionally not committed. The repo is old enough that the Fantasy Premier League APIs and surrounding data ecosystem have changed since the original implementation, so preserving the old scraper-shaped data contract is less useful than moving to a current import path.
 
-The preferred data direction is to import from a single file exported from fplreview.com. There is a GitHub issue posted for this change, although this pass could not verify the issue number because GitHub API access was unavailable in the sandbox. Current tests cover path resolution and a few `validteam()` cases, but they do not exercise file import, projections, scoring, transfers, or GA evolution.
+The preferred data direction is to import from a single file exported from fplreview.com. Current tests cover path resolution, a few `validteam()` cases, and a tiny fplreview-style CSV import fixture, but they do not yet exercise enough projection, scoring, transfer, or GA evolution behavior.
 
 Notable constraints and pain points:
 
 - `fpl.py` holds global mutable state for players, fixtures, budget, gameweek, forecast weeks, chips, and transfer behavior.
-- `getplayerdata()` expects older scraper-shaped inputs and writes `data/playerkeydata` as a side effect.
-- `lookaheadpoints()` indexes fixtures with `fixtures[player["id"] - 1]`, so player IDs and fixture rows must stay aligned.
-- The most useful data contract improvement is likely a new single-file fplreview.com importer rather than a compatibility layer around the old three-file scraper input.
+- `getplayerdata()` loads `fplreview.csv`, maps projection rows to FPLgen player dictionaries, assigns global player state, and writes `data/playerkeydata` as a side effect.
+- `map_fplreview_rows()` requires `Pos`, `ID`, `Name`, `BV`, `SV`, `Team`, and configured gameweek point columns.
+- The older `lookaheadpoints()` path still indexes fixtures with `fixtures[player["id"] - 1]`, so player IDs and fixture rows must stay aligned if that path remains under test.
 - `GA.py` runs work at import time, creates a population of 10,000, and loops up to 300 generations with no CLI controls.
 - `Population.get_average_fitness()` reads cached scores directly, which can include `-1` for unevaluated individuals unless fitness was computed first.
-- The repo already has a recent ideation note for a synthetic test data set; that note is treated as background context here.
 
-External context: current FPL tooling commonly documents `bootstrap-static` for player data and `element-summary/{player_id}` for per-player fixtures/history, while this repo expects a three-file scraper-shaped contract. fplreview.com-style projections are also used by adjacent FPL optimization tools as loadable projection data. Useful references include the `fpl` package docs, FPLstat's data reference, Oliver Looney's FPL API explainer, and FPL Optimized's load-data page:
+External context: current FPL tooling commonly documents `bootstrap-static` for player data and `element-summary/{player_id}` for per-player fixtures/history. fplreview.com-style projections are also used by adjacent FPL optimization tools as loadable projection data. Two public historical sources look especially useful for test data:
+
+- `Randdalf/fplcache`: historical compressed `bootstrap-static` snapshots. Best for realistic FPL player, team, status, cost, and event shape.
+- `theFPLkiwi/theFPLkiwi`: historical projection resources. Its README says `Old_Seasons` contains previous seasons' weekly projections and hindsight-optimisation data, while current-season projection folders contain weekly projections. It also warns that some projected players may have ID `0` or omit players no longer considered relevant, so importer tests should handle filtering and zero-fill behavior.
+
+Useful references include the `fpl` package docs, FPLstat's data reference, Oliver Looney's FPL API explainer, FPL Optimized's load-data page, Randdalf's fplcache, and theFPLkiwi:
 
 - https://fpl.readthedocs.io/en/latest/_modules/fpl/fpl.html
 - https://james-leslie.github.io/fplstat/data-reference/
 - https://www.oliverlooney.com/blogs/FPL-APIs-Explained
 - https://fploptimized.com/load.html
+- https://github.com/Randdalf/fplcache
+- https://github.com/theFPLkiwi/theFPLkiwi
 
 ## Topic Axes
 
@@ -58,11 +64,11 @@ External context: current FPL tooling commonly documents `bootstrap-static` for 
 
 **Complexity:** Medium
 
-**Status:** Explored
+**Status:** Shipped
 
 ### 2. Build a Golden fplreview.com Import Fixture
 
-**Description:** Add a small representative fplreview.com export under `tests/fixtures/` and use it to test import, normalization, projection fields, unavailable or low-minutes players, and a known legal squad. Keep any synthetic data in the same column shape as the real export rather than recreating the old `playerdata`/`fixturedata`/`playerlast10.csv` trio.
+**Description:** Add a small representative fplreview.com export under `tests/fixtures/` and use it to test import, normalization, projection fields, unavailable or low-minutes players, and a known legal squad. Keep synthetic data in the same column shape as the real export rather than recreating the old `playerdata`/`fixturedata`/`playerlast10.csv` trio. The minimal practical corpus should include roughly 28 players: 4 goalkeepers, 8 defenders, 10 midfielders, and 6 forwards across 10 to 12 clubs, with six projection columns covering the configured gameweek window.
 
 **Axis:** Data contract and fixtures
 
@@ -70,7 +76,7 @@ External context: current FPL tooling commonly documents `bootstrap-static` for 
 
 **Rationale:** A golden fixture lets the project change data import without guessing. It should also become the safety net for scoring and GA smoke tests.
 
-**Downsides:** Needs either a committed sanitized sample or a generator that faithfully mimics the export columns.
+**Downsides:** Needs either a committed sanitized sample or a generator that faithfully mimics the export columns. It also needs enough players per position and club to avoid random team-generation retry loops.
 
 **Confidence:** 93%
 
@@ -96,7 +102,43 @@ External context: current FPL tooling commonly documents `bootstrap-static` for 
 
 **Status:** Unexplored
 
-### 4. Split Import, Projection, and Scoring Into Explicit Boundaries
+### 4. Add Historical Projection Fixtures From theFPLkiwi
+
+**Description:** Pin one historical theFPLkiwi projection CSV and convert it into the same shape as a fplreview export. Keep only rows with valid nonzero FPL IDs, map name, position, team, price, and weekly projection columns to `Pos`, `ID`, `Name`, `BV`, `SV`, `Team`, and `*_Pts`, and add a small zero-fill fixture for known FPL IDs that are present in FPL state snapshots but missing from the projection file.
+
+**Axis:** Data contract and fixtures
+
+**Basis:** `external:` theFPLkiwi's repository documents historical weekly projections under `Old_Seasons`; this repo now optimizes against projected point columns.
+
+**Rationale:** This is the best real-world source for optimizer input because it contains actual projected points across gameweeks rather than just live FPL state. It complements the synthetic golden fixture by exposing real naming, ID, team, price, and projection quirks.
+
+**Downsides:** Column naming may vary by season, and historical projections are a third-party model output rather than official FPL data.
+
+**Confidence:** 88%
+
+**Complexity:** Medium
+
+**Status:** Unexplored
+
+### 5. Add Historical FPL State Fixtures From fplcache
+
+**Description:** Pin one `Randdalf/fplcache` `bootstrap-static` snapshot and trim it to a compact player/team fixture. Use `elements` for IDs, names, element type, team IDs, status, price, minutes, and total points; use `teams` to verify team-name mapping; and use `events` only where it helps confirm gameweek context.
+
+**Axis:** Data contract and fixtures
+
+**Basis:** `external:` fplcache is a historical cache of FPL `bootstrap-static` snapshots, which is the official-shaped state data adjacent to projection input.
+
+**Rationale:** This is strongest as schema-drift protection and realistic player-pool data, paired with theFPLkiwi or synthetic projections for expected points.
+
+**Downsides:** `bootstrap-static` is not a projection source, so it does not directly feed FPLgen's current optimizer without separate projected points.
+
+**Confidence:** 84%
+
+**Complexity:** Medium
+
+**Status:** Unexplored
+
+### 6. Split Import, Projection, and Scoring Into Explicit Boundaries
 
 **Description:** Separate the new fplreview.com file import, projection normalization, scoring inputs, and inspection output into distinct functions or objects. This can be a stepping stone toward an `FplContext` that owns players, budget, gameweek, chip flags, and scoring constants.
 
@@ -114,7 +156,7 @@ External context: current FPL tooling commonly documents `bootstrap-static` for 
 
 **Status:** Unexplored
 
-### 5. Lock Down Scoring and Transfer Edge Cases
+### 7. Lock Down Scoring and Transfer Edge Cases
 
 **Description:** Add focused tests for scoring formation selection, captain/triple-captain behavior, bench boost, unavailable players or low projected minutes, blank or missing projection weeks, budget-constrained transfers, and invalid teams returning zero. Use builders plus the fplreview.com golden fixture rather than live API data.
 
@@ -132,7 +174,7 @@ External context: current FPL tooling commonly documents `bootstrap-static` for 
 
 **Status:** Unexplored
 
-### 6. Add Validity Repair Instead of Letting Broken Individuals Score Zero
+### 8. Add Validity Repair Instead of Letting Broken Individuals Score Zero
 
 **Description:** Implement or replace `repairteam()` so crossover and mutation produce valid squads more often, or make mutation position-aware enough to preserve squad shape, budget, club limits, and uniqueness. Track invalid-rate during evolution as a metric.
 
@@ -150,7 +192,7 @@ External context: current FPL tooling commonly documents `bootstrap-static` for 
 
 **Status:** Unexplored
 
-### 7. Modernize the Developer Workflow Around Import-and-Run
+### 9. Modernize the Developer Workflow Around Import-and-Run
 
 **Description:** Add a proper console script, test command, lint/format baseline, and README examples for running against a fplreview.com export. Keep the implementation plain Python, but make `fplgen --input path/to/export.csv --seed 1 --generations 20` style workflows obvious.
 
@@ -184,11 +226,12 @@ External context: current FPL tooling commonly documents `bootstrap-static` for 
 
 ## Recommendation
 
-Start with Ideas 1, 2, 3, and 5 as the first improvement wave:
+Start with Ideas 2, 3, 4, 5, and 7 as the first improvement wave:
 
-1. Define and implement the single-file fplreview.com export importer.
-2. Add a golden fplreview.com import fixture.
-3. Add deterministic short-run controls to the GA entrypoint.
-4. Cover the scoring and transfer rules that matter most.
+1. Expand the golden fplreview.com import fixture into a small deterministic corpus.
+2. Add deterministic short-run controls to the GA entrypoint.
+3. Add a pinned theFPLkiwi projection fixture converted to fplreview-style CSV.
+4. Add a pinned fplcache `bootstrap-static` fixture for realistic player/team mapping.
+5. Cover the scoring and transfer rules that matter most.
 
 Those moves create enough safety to tackle the larger architectural improvements: boundary-first refactor, context object, and validity repair.

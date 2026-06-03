@@ -31,6 +31,11 @@ python3 -m py_compile code/*.py
 python3 -m unittest discover -s tests
 ```
 
+The test suite includes a synthetic golden fplreview fixture that checks the
+repo still works end to end: import, known legal squad scoring, and a tiny
+seeded GA smoke path. The fixture is validation data, not a real projection
+quality sample; real-export validation can be added separately later.
+
 ## Credits
 
 The genetic algorithm was based on Arthur Rebelo's Python port of Lee Jacobson's beginner genetic algorithm tutorial.
