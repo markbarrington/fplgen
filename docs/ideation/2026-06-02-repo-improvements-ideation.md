@@ -100,11 +100,11 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 **Complexity:** Medium
 
-**Status:** Unexplored
+**Status:** Shipped
 
 ### 4. Add Historical Projection Fixtures From theFPLkiwi
 
-**Description:** Pin one historical theFPLkiwi projection CSV and convert it into the same shape as a fplreview export. Keep only rows with valid nonzero FPL IDs, map name, position, team, price, and weekly projection columns to `Pos`, `ID`, `Name`, `BV`, `SV`, `Team`, and `*_Pts`, and add a small zero-fill fixture for known FPL IDs that are present in FPL state snapshots but missing from the projection file.
+**Description:** Pin one historical theFPLkiwi projection CSV and convert it into the same shape as a fplreview export. Keep only rows with nonzero source IDs, map name, position, team, price, and weekly projection columns to `Pos`, `ID`, `Name`, `BV`, `SV`, `Team`, and `*_Pts`. Pairing with fplcache to zero-fill selectable FPL IDs missing from the projection source remains follow-up work.
 
 **Axis:** Data contract and fixtures
 
@@ -118,7 +118,7 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 **Complexity:** Medium
 
-**Status:** Unexplored
+**Status:** Shipped. The repo now includes a converted 2023/24 theFPLkiwi historical projection-row fixture, provenance docs, a regeneration utility, import/coverage tests, and a valid-squad scoring check. fplcache zero-fill pairing remains deferred.
 
 ### 5. Add Historical FPL State Fixtures From fplcache
 
@@ -226,13 +226,12 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 ## Recommendation
 
-Ideas 1 and 2 have shipped: FPLgen now imports a single fplreview.com CSV and has a synthetic golden fixture that proves import, known-squad scoring, and a tiny seeded GA path.
+Ideas 1, 2, and 3 have shipped: FPLgen now imports a single fplreview.com CSV, has a synthetic golden fixture that proves import, known-squad scoring, and a tiny seeded GA path, and exposes a configurable GA runner for short deterministic runs.
 
-The next improvement wave should focus on Ideas 3, 4, 5, and 7:
+The next improvement wave should focus on Ideas 4, 5, and 7:
 
-1. Add deterministic short-run controls to the GA entrypoint.
-2. Add a pinned theFPLkiwi projection fixture converted to fplreview-style CSV.
-3. Add a pinned fplcache `bootstrap-static` fixture for realistic player/team mapping.
-4. Cover the scoring and transfer rules that matter most.
+1. Add a pinned theFPLkiwi projection fixture converted to fplreview-style CSV.
+2. Add a pinned fplcache `bootstrap-static` fixture for realistic player/team mapping.
+3. Cover the scoring and transfer rules that matter most.
 
 Those moves create enough safety to tackle the larger architectural improvements: boundary-first refactor, context object, and validity repair.

@@ -47,10 +47,17 @@ python3 -m py_compile code/*.py
 python3 -m unittest discover -s tests
 ```
 
-The test suite includes a synthetic golden fplreview fixture that checks the
-repo still works end to end: import, known legal squad scoring, and a tiny
-seeded GA smoke path. The fixture is validation data, not a real projection
-quality sample; real-export validation can be added separately later.
+The test suite includes two committed projection fixtures:
+
+- `tests/fixtures/fplreview_golden.csv`: synthetic validation data that checks
+  import, known legal squad scoring, and a tiny seeded GA smoke path.
+- `tests/fixtures/fplkiwi_historical.csv`: a historical theFPLkiwi
+  projection-row corpus converted to fplreview-style columns for realistic
+  import and squad-scoring coverage.
+
+The historical fixture is realistic projection input, not official FPL state
+and not a complete selectable-player universe. It does not define optimizer
+score or timing benchmarks.
 
 ## Credits
 

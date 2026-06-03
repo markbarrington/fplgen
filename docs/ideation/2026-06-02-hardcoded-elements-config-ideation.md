@@ -21,6 +21,8 @@ Add a command-line runner where common run choices are passed as flags: input CS
 
 This is the best first move because it directly removes source edits from day-to-day use while keeping the project simple. It also gives tests a deterministic way to run tiny optimizer jobs.
 
+**Status:** Shipped. The GA runner now accepts CLI controls for input CSV, gameweek, forecast weeks, population size, generation limit, and seed.
+
 ### 2. Config File Per Scenario
 
 Support a checked-in or user-created config file such as `config/default.toml` or `runs/example.toml`. The file would hold run parameters, FPL rules, chip settings, current squad, and output choices.
@@ -75,12 +77,11 @@ This is valuable if rules change or historical seasons matter, but it should com
 
 ## Recommendation
 
-The best path is staged:
+The best path is staged. Step 1 has shipped:
 
-1. Add a CLI runner for the obvious knobs.
-2. Introduce a `RunConfig` object so those knobs stop being globals.
-3. Add scenario/config files once the shape of the knobs is proven.
-4. Move mutable state into an `FplContext`.
-5. Add presets and richer scenario files for normal FPL workflows.
+1. Introduce a `RunConfig` object so those knobs stop being globals.
+2. Add scenario/config files once the shape of the knobs is proven.
+3. Move mutable state into an `FplContext`.
+4. Add presets and richer scenario files for normal FPL workflows.
 
 This sequence removes source edits early without forcing a large architecture rewrite up front.
