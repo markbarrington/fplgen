@@ -4,6 +4,7 @@ type: feat
 status: completed
 date: 2026-06-03
 origin: docs/brainstorms/2026-06-03-historical-fplkiwi-projection-fixture-requirements.md
+pr: https://github.com/markbarrington/fplgen/pull/7
 ---
 
 # feat: Add Historical theFPLkiwi Projection Fixture
