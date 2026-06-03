@@ -8,9 +8,8 @@ class FitnessCalc():
 
     @staticmethod
     def get_max_fitness():
-        return 10000
+        return FitnessCalc.Solution
 
     @staticmethod
     def targetValue():
         return 14
-

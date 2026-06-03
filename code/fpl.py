@@ -513,11 +513,14 @@ class fpl():
     # Read the fplreview export into the player global variable.
     # Output a playerkeydata inspection file.
     @staticmethod
-    def getplayerdata():
+    def getplayerdata(filename=None):
         global players, fixtures
 
         fixtures = []
-        imported_players = fpl.load_fplreview_players(data_file('fplreview.csv'))
+        if filename is None:
+            filename = data_file('fplreview.csv')
+
+        imported_players = fpl.load_fplreview_players(filename)
 
         players = imported_players
         fpl.write_playerkeydata(players)
@@ -1333,7 +1336,7 @@ class fpl():
     def printteam(team,value):
 
         for player in team:
-            playerdata = player['second_name'].encode('ascii', errors='ignore')
+            playerdata = player['second_name'].encode('ascii', errors='ignore').decode('ascii')
             playerdata += "," + str(player['total_points'])
             playerdata += "," + str(player['tsp'])
             playerdata += "," + str(player['now_cost'])
