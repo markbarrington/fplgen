@@ -161,16 +161,24 @@ class GARunnerTests(unittest.TestCase):
         self.assertEqual(first["generation_count"], second["generation_count"])
 
     def test_runner_horizon_missing_columns_fails_before_population_creation(self):
+        scenario_path = self.write_scenario("scenario-9.json", gameweek=9)
+
         with self.assertRaisesRegex(ValueError, "Missing required fplreview gameweek columns: 9_Pts"):
-            with redirect_stdout(io.StringIO()):
-                ga_module.run(
-                    input_path=FIXTURE,
-                    population_size=6,
-                    generation_limit=1,
-                    seed=7,
-                    gameweek=9,
-                    forecastweeks=1,
-                )
+            with patch.object(ga_module, "validate_scenario_file") as validate_scenario:
+                with patch.object(ga_module, "Population") as population:
+                    with redirect_stdout(io.StringIO()):
+                        ga_module.run(
+                            input_path=FIXTURE,
+                            scenario_path=scenario_path,
+                            population_size=6,
+                            generation_limit=1,
+                            seed=7,
+                            gameweek=9,
+                            forecastweeks=1,
+                        )
+
+        validate_scenario.assert_not_called()
+        population.assert_not_called()
 
     def test_runner_defaults_do_not_inherit_prior_horizon_overrides(self):
         with redirect_stdout(io.StringIO()):
