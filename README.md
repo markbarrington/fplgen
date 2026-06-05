@@ -67,9 +67,9 @@ Runtime data is intentionally kept out of Git. Export projections from fplreview
 data/fplreview.csv
 ```
 
-FPLgen uses the configured gameweek columns from the export as the expected score for each player. Those values are loaded directly; FPLgen does not apply additional projection adjustments for strength of schedule, home/away splits, availability, or expected minutes.
+FPLgen imports and normalizes the configured gameweek columns from the export as the expected score for each player. Those values are loaded directly into the optimizer's scoring input; FPLgen does not apply additional projection adjustments for strength of schedule, home/away splits, availability, or expected minutes.
 
-The run writes `data/playerkeydata`, a generated inspection file showing the imported scoring values used by the optimizer.
+The run writes `data/playerkeydata`, a generated inspection file showing the normalized projection values used by the optimizer.
 
 ## Development
 
