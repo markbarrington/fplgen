@@ -13,11 +13,13 @@ from unittest.mock import patch
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CODE_DIR = PROJECT_ROOT / "code"
 FIXTURE = PROJECT_ROOT / "tests" / "fixtures" / "fplreview_golden.csv"
+FPLKIWI_FIXTURE = PROJECT_ROOT / "tests" / "fixtures" / "fplkiwi_historical.csv"
 if str(CODE_DIR) not in sys.path:
     sys.path.insert(0, str(CODE_DIR))
 
 fpl_module = importlib.import_module("fpl")
 ga_module = importlib.import_module("GA")
+from generate_scenario import generate_scenario_data
 
 KNOWN_SQUAD_IDS = [
     201,
@@ -257,6 +259,49 @@ class GARunnerTests(unittest.TestCase):
                     "saved_free_transfers": 2,
                     "current_squad": KNOWN_SQUAD_IDS,
                 }
+            ),
+            encoding="utf-8",
+        )
+        return path
+
+    def test_runner_completes_with_fplkiwi_historical_fixture(self):
+        scenario_path = self.write_generated_scenario(
+            "fplkiwi-scenario.json",
+            input_path=FPLKIWI_FIXTURE,
+            gameweek=18,
+            forecastweeks=6,
+        )
+
+        with redirect_stdout(io.StringIO()):
+            result = ga_module.run(
+                input_path=FPLKIWI_FIXTURE,
+                scenario_path=scenario_path,
+                population_size=10,
+                generation_limit=1,
+                seed=1,
+                gameweek=18,
+                forecastweeks=6,
+            )
+
+        self.assertGreater(result["fittest_score"], 0)
+        self.assertEqual(result["generation_count"], 1)
+        self.assertEqual(len(fpl_module.players), 461)
+        self.assertEqual(fpl_module.gameweek, 18)
+        self.assertEqual(fpl_module.forecastweeks, 6)
+        self.assertEqual(fpl_module.players[0]["id"], 113)
+        self.assertAlmostEqual(fpl_module.players[0]["6"], 3.309606969)
+        self.assertTrue((self.data_dir / "playerkeydata").exists())
+
+    def write_generated_scenario(self, filename, input_path, gameweek, forecastweeks):
+        path = self.data_dir / filename
+        path.write_text(
+            json.dumps(
+                generate_scenario_data(
+                    input_path,
+                    gameweek=gameweek,
+                    forecastweeks=forecastweeks,
+                    seed=1,
+                )
             ),
             encoding="utf-8",
         )

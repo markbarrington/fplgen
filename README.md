@@ -87,7 +87,7 @@ The test suite includes two committed projection fixtures:
   seeded GA smoke path.
 - `tests/fixtures/fplkiwi_historical.csv`: a historical theFPLkiwi
   projection-row corpus converted to fplreview-style columns for realistic
-  import and squad-scoring coverage.
+  import, squad-scoring, and bounded runner-path coverage.
 
 The historical fixture is realistic projection input, not official FPL state
 and not a complete selectable-player universe. It does not define optimizer
