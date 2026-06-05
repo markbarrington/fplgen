@@ -1,11 +1,13 @@
 import importlib
 import io
+import json
 import random
 import sys
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +19,25 @@ if str(CODE_DIR) not in sys.path:
 
 fpl_module = importlib.import_module("fpl")
 ga_module = importlib.import_module("GA")
+from generate_scenario import generate_scenario_data
+
+KNOWN_SQUAD_IDS = [
+    201,
+    202,
+    204,
+    205,
+    206,
+    207,
+    208,
+    211,
+    212,
+    213,
+    214,
+    215,
+    218,
+    219,
+    220,
+]
 
 
 class GARunnerTests(unittest.TestCase):
@@ -59,6 +80,8 @@ class GARunnerTests(unittest.TestCase):
             [
                 "--input",
                 str(FIXTURE),
+                "--scenario",
+                "scenario.json",
                 "--population",
                 "6",
                 "--generations",
@@ -73,6 +96,7 @@ class GARunnerTests(unittest.TestCase):
         )
 
         self.assertEqual(options.input, FIXTURE)
+        self.assertEqual(options.scenario, Path("scenario.json"))
         self.assertEqual(options.population, 6)
         self.assertEqual(options.generations, 2)
         self.assertEqual(options.seed, 7)
@@ -94,12 +118,16 @@ class GARunnerTests(unittest.TestCase):
                         ga_module.parse_args(args)
 
     def test_runner_loads_custom_input_and_writes_inspection_output(self):
+        scenario_path = self.write_scenario("scenario.json", gameweek=3)
+
         with redirect_stdout(io.StringIO()):
             result = ga_module.run(
                 input_path=FIXTURE,
+                scenario_path=scenario_path,
                 population_size=6,
                 generation_limit=1,
                 seed=7,
+                gameweek=3,
             )
 
         self.assertGreater(result["fittest_score"], 0)
@@ -109,18 +137,24 @@ class GARunnerTests(unittest.TestCase):
         self.assertTrue((self.data_dir / "playerkeydata").exists())
 
     def test_runner_seeded_short_run_is_reproducible(self):
+        scenario_path = self.write_scenario("scenario.json", gameweek=3)
+
         with redirect_stdout(io.StringIO()):
             first = ga_module.run(
                 input_path=FIXTURE,
+                scenario_path=scenario_path,
                 population_size=6,
                 generation_limit=2,
                 seed=7,
+                gameweek=3,
             )
             second = ga_module.run(
                 input_path=FIXTURE,
+                scenario_path=scenario_path,
                 population_size=6,
                 generation_limit=2,
                 seed=7,
+                gameweek=3,
             )
 
         self.assertEqual(first["fittest_score"], second["fittest_score"])
@@ -147,22 +181,101 @@ class GARunnerTests(unittest.TestCase):
                 seed=7,
                 gameweek=4,
                 forecastweeks=1,
+                scenario_path=self.write_scenario("scenario-4.json", gameweek=4),
             )
             ga_module.run(
                 input_path=FIXTURE,
                 population_size=6,
                 generation_limit=1,
                 seed=7,
+                scenario_path=self.write_scenario("scenario-3.json", gameweek=ga_module.DEFAULT_GAMEWEEK),
             )
 
         self.assertEqual(fpl_module.gameweek, ga_module.DEFAULT_GAMEWEEK)
         self.assertEqual(fpl_module.forecastweeks, ga_module.DEFAULT_FORECASTWEEKS)
         self.assertIn("6", fpl_module.players[0])
 
+    def test_non_gw1_without_scenario_fails_before_population_creation(self):
+        output = io.StringIO()
+        with self.assertRaisesRegex(ValueError, "Scenario file is required"):
+            with patch.object(ga_module, "Population") as population:
+                with redirect_stdout(output):
+                    ga_module.run(
+                        input_path=FIXTURE,
+                        population_size=6,
+                        generation_limit=1,
+                        seed=7,
+                        gameweek=3,
+                    )
+
+        population.assert_not_called()
+        self.assertNotIn("Creating intial population", output.getvalue())
+
+    def test_non_gw1_with_valid_scenario_prints_context(self):
+        scenario_path = self.write_scenario("scenario.json", gameweek=3)
+
+        output = io.StringIO()
+        with redirect_stdout(output):
+            result = ga_module.run(
+                input_path=FIXTURE,
+                scenario_path=scenario_path,
+                population_size=6,
+                generation_limit=1,
+                seed=7,
+                gameweek=3,
+            )
+
+        self.assertEqual(result["scenario"].gameweek, 3)
+        self.assertIn("Existing squad scenario", output.getvalue())
+        self.assertIn("bank 0.7", output.getvalue())
+        self.assertIn("saved free transfers 2", output.getvalue())
+
+    def test_non_gw1_scenario_gameweek_mismatch_fails_before_population_creation(self):
+        scenario_path = self.write_scenario("scenario.json", gameweek=4)
+        output = io.StringIO()
+
+        with self.assertRaisesRegex(ValueError, "does not match configured gameweek"):
+            with patch.object(ga_module, "Population") as population:
+                with redirect_stdout(output):
+                    ga_module.run(
+                        input_path=FIXTURE,
+                        scenario_path=scenario_path,
+                        population_size=6,
+                        generation_limit=1,
+                        seed=7,
+                        gameweek=3,
+                    )
+
+        population.assert_not_called()
+        self.assertNotIn("Creating intial population", output.getvalue())
+
+    def write_scenario(self, filename, gameweek=3):
+        path = self.data_dir / filename
+        path.write_text(
+            json.dumps(
+                {
+                    "gameweek": gameweek,
+                    "bank": 0.7,
+                    "saved_free_transfers": 2,
+                    "current_squad": KNOWN_SQUAD_IDS,
+                }
+            ),
+            encoding="utf-8",
+        )
+        return path
+
     def test_runner_completes_with_fplkiwi_historical_fixture(self):
+        scenario_path = self.write_generated_scenario(
+            "fplkiwi-scenario.json",
+            input_path=FPLKIWI_FIXTURE,
+            gameweek=18,
+            forecastweeks=6,
+        )
+
         with redirect_stdout(io.StringIO()):
             result = ga_module.run(
                 input_path=FPLKIWI_FIXTURE,
+                scenario_path=scenario_path,
                 population_size=10,
                 generation_limit=1,
                 seed=1,
@@ -178,6 +291,21 @@ class GARunnerTests(unittest.TestCase):
         self.assertEqual(fpl_module.players[0]["id"], 113)
         self.assertAlmostEqual(fpl_module.players[0]["6"], 3.309606969)
         self.assertTrue((self.data_dir / "playerkeydata").exists())
+
+    def write_generated_scenario(self, filename, input_path, gameweek, forecastweeks):
+        path = self.data_dir / filename
+        path.write_text(
+            json.dumps(
+                generate_scenario_data(
+                    input_path,
+                    gameweek=gameweek,
+                    forecastweeks=forecastweeks,
+                    seed=1,
+                )
+            ),
+            encoding="utf-8",
+        )
+        return path
 
 
 if __name__ == "__main__":

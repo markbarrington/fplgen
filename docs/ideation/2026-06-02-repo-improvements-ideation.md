@@ -41,9 +41,9 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 ## Topic Axes
 
 - Data contract and fixtures
-- Scoring correctness
+- Scoring and transfer correctness
 - GA runtime and reproducibility
-- State and architecture
+- Scenario state and architecture
 - Developer workflow and packaging
 
 ## Ranked Ideas
@@ -120,7 +120,25 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 **Status:** Shipped. The repo now includes a converted 2023/24 theFPLkiwi historical projection-row fixture, provenance docs, a regeneration utility, import/coverage tests, and a valid-squad scoring check. fplcache zero-fill pairing remains deferred.
 
-### 5. Add Historical FPL State Fixtures From fplcache
+### 5. Add Scenario-Based Existing Squad Optimization
+
+**Description:** Add a scenario-file input for gameweeks where the manager already has a squad. If the configured gameweek is 1, FPLgen can generate a fresh squad and no current squad is required. If the configured gameweek is not 1, the scenario must supply the current squad by FPL ID, current bank, saved free transfers, and chip availability. Wildcard and Free Hit should not be scenario modes; they should be optimizer options that the run may examine and time when allowed.
+
+**Axis:** Scenario state and architecture
+
+**Basis:** `direct:` `Individual.__init__()` always calls `fpl.generateteam()`, `currentteam` exists but is unused in `generateteam()`, `scoreteam()` skips transfers in week 1 because it assumes a newly generated starting team, and `scoreteam()` derives bank as `budget - teamvalue(team)` instead of using an existing manager's actual bank.
+
+**Rationale:** This is the missing core workflow for week-to-week FPL use. Fresh squad generation is only valid for gameweek 1; after that, every realistic run starts from an owned squad, a live bank, and saved free transfers. Wildcard and Free Hit are then choices the optimizer may make within that starting scenario, not separate ways of describing the starting state. Making that state explicit also gives the project a natural first scenario-file contract before a broader `RunConfig` or `FplContext` refactor.
+
+**Downsides:** This touches core transfer semantics, not just input parsing. It needs careful regression fixtures for GW1 fresh-squad behavior, required current-squad input after GW1, first-week transfers, bank preservation, saved free transfer caps, wildcard timing, and Free Hit restoration.
+
+**Confidence:** 94%
+
+**Complexity:** Medium-High
+
+**Status:** Proposed next
+
+### 6. Add Historical FPL State Fixtures From fplcache
 
 **Description:** Pin one `Randdalf/fplcache` `bootstrap-static` snapshot and trim it to a compact player/team fixture. Use `elements` for IDs, names, element type, team IDs, status, price, minutes, and total points; use `teams` to verify team-name mapping; and use `events` only where it helps confirm gameweek context.
 
@@ -138,11 +156,11 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 **Status:** Unexplored
 
-### 6. Split Import, Projection, and Scoring Into Explicit Boundaries
+### 7. Split Import, Projection, and Scoring Into Explicit Boundaries
 
 **Description:** Separate the new fplreview.com file import, projection normalization, scoring inputs, and inspection output into distinct functions or objects. This can be a stepping stone toward an `FplContext` that owns players, budget, gameweek, chip flags, and scoring constants.
 
-**Axis:** State and architecture
+**Axis:** Scenario state and architecture
 
 **Basis:** `direct:` `getplayerdata()` currently mixes file IO, field enrichment, projection calculations, global assignment, and writing `playerkeydata`, while `fpl.py` defines many module globals for run state.
 
@@ -156,11 +174,11 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 **Status:** Unexplored
 
-### 7. Lock Down Scoring and Transfer Edge Cases
+### 8. Lock Down Scoring and Transfer Edge Cases
 
 **Description:** Add focused tests for scoring formation selection, captain/triple-captain behavior, bench boost, unavailable players or low projected minutes, blank or missing projection weeks, budget-constrained transfers, and invalid teams returning zero. Use builders plus the fplreview.com golden fixture rather than live API data.
 
-**Axis:** Scoring correctness
+**Axis:** Scoring and transfer correctness
 
 **Basis:** `direct:` `scoreteam()` mutates transfer patterns and bank state, `score()` chooses a starting lineup from sorted weekly projections, and the future importer will need to map fplreview.com projection columns into the week scores that scoring expects.
 
@@ -174,7 +192,7 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 **Status:** Unexplored
 
-### 8. Add Validity Repair Instead of Letting Broken Individuals Score Zero
+### 9. Add Validity Repair Instead of Letting Broken Individuals Score Zero
 
 **Description:** Implement or replace `repairteam()` so crossover and mutation produce valid squads more often, or make mutation position-aware enough to preserve squad shape, budget, club limits, and uniqueness. Track invalid-rate during evolution as a metric.
 
@@ -192,7 +210,7 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 **Status:** Unexplored
 
-### 9. Modernize the Developer Workflow Around Import-and-Run
+### 10. Modernize the Developer Workflow Around Import-and-Run
 
 **Description:** Add a proper console script, test command, lint/format baseline, and README examples for running against a fplreview.com export. Keep the implementation plain Python, but make `fplgen --input path/to/export.csv --seed 1 --generations 20` style workflows obvious.
 
@@ -228,10 +246,13 @@ Useful references include the `fpl` package docs, FPLstat's data reference, Oliv
 
 Ideas 1, 2, 3, and 4 have shipped: FPLgen now imports a single fplreview.com CSV, has a synthetic golden fixture that proves import, known-squad scoring, and a tiny seeded GA path, exposes a configurable GA runner for short deterministic runs, and includes a historical theFPLkiwi projection fixture for realistic projection-row tests.
 
-The next improvement wave should focus on Ideas 5 and 7, with Idea 6 becoming more useful once the realistic state and scoring-rule fixtures are in place:
+The next improvement wave should start with Idea 5, because it unlocks the normal in-season workflow the tool is currently missing. The priority order should be:
 
-1. Add a pinned fplcache `bootstrap-static` fixture for realistic player/team mapping.
-2. Cover the scoring and transfer rules that matter most.
-3. Add deterministic optimizer health metrics after the realistic fixture base is broader.
+1. Add scenario-based existing squad optimization: generate a fresh squad only for gameweek 1, and require a current squad for every later gameweek.
+2. Treat wildcard and Free Hit as optimizer chip options inside the scenario, including the ability to decide the best week to play each allowed chip.
+3. Add focused transfer and scenario regression fixtures as part of that work, especially required current-squad input after gameweek 1, first-week transfers, bank preservation, saved free transfers up to 5, wildcard timing, and Free Hit squad restoration.
+4. Add a pinned fplcache `bootstrap-static` fixture for realistic player/team mapping once the scenario contract needs richer official-state coverage.
+5. Broaden scoring and transfer edge-case coverage beyond the scenario feature.
+6. Add deterministic optimizer health metrics after the realistic fixture base is broader.
 
-Those moves create enough safety to tackle the larger architectural improvements: boundary-first refactor, context object, and validity repair.
+Those moves create enough safety to tackle the larger architectural improvements: boundary-first refactor, context object, and validity repair. The scenario feature should be treated as the first concrete step toward `RunConfig` and `FplContext`, not as a separate one-off input path.

@@ -787,7 +787,7 @@ class fpl():
         return pattern
 
     @staticmethod
-    def getrandompattern():
+    def getrandompattern(saved_free_transfers=None):
 
         #if transfersavailable == 1:
         #    return transferpatternsone[random.randint(0,len(transferpatternsone)-1)]
@@ -797,6 +797,13 @@ class fpl():
         fixed = False
         if fixed == True:
             transferpattern = [1,1,1,1,1]
+        elif saved_free_transfers is not None:
+            transfers = saved_free_transfers
+            transferpattern = []
+            for i in range(0,transferweeks):
+                ttw = random.randint(0,transfers)
+                transferpattern.append(ttw)
+                transfers = min(5, transfers - ttw + 1)
         else:
             transfers = transfersavailable
             transferpattern = []
@@ -868,41 +875,43 @@ class fpl():
 
     # Generate a team of 15 players
     @staticmethod
-    def generateteam():
+    def generateteam(scenario=None):
 
         team = []
         transferpositions = []
 
-        #for squadmember in currentteam:
-        #    team.append(squadmember)
+        if scenario is not None:
+            for squadmember in scenario.current_squad:
+                team.append(squadmember)
         #fpl.printteam(team,True)
         #print fpl.validteam(team)
 
-        for idx, positionmax in enumerate(squadcount):
-            for i in range(positionmax):
-                attempts = 0
-                while attempts <= 1000:
-                    attempts += 1
-                    # Get a random player
-                    player = players[random.randint(0,len(players)-1)]
-                    # Check player is available
-                    if player['status'] != 'a':
-                        continue
-                    # check player is unique to this team
-                    unique = True
-                    for otherplayer in team:
-                        if otherplayer['id'] == player['id']:
-                            unique = False
-                    if unique == False:
-                        continue
-                    # Check player is the right type
-                    if player['element_type'] != idx + 1:
-                        continue
-                    # Add the player
-                    team.append(player)
-                    break
-                if attempts > 1000:
-                    team.append(player)
+        if scenario is None:
+            for idx, positionmax in enumerate(squadcount):
+                for i in range(positionmax):
+                    attempts = 0
+                    while attempts <= 1000:
+                        attempts += 1
+                        # Get a random player
+                        player = players[random.randint(0,len(players)-1)]
+                        # Check player is available
+                        if player['status'] != 'a':
+                            continue
+                        # check player is unique to this team
+                        unique = True
+                        for otherplayer in team:
+                            if otherplayer['id'] == player['id']:
+                                unique = False
+                        if unique == False:
+                            continue
+                        # Check player is the right type
+                        if player['element_type'] != idx + 1:
+                            continue
+                        # Add the player
+                        team.append(player)
+                        break
+                    if attempts > 1000:
+                        team.append(player)
 
 
 
@@ -912,8 +921,12 @@ class fpl():
             wctransfers = 15
 
         transfers = transferweeks + hit + wctransfers
-        if transfersavailable == 2:
-            transfers += 1
+        saved_free_transfers = None
+        if scenario is not None:
+            saved_free_transfers = scenario.saved_free_transfers
+        available_transfers = saved_free_transfers or transfersavailable
+        if available_transfers > 1:
+            transfers += available_transfers - 1
 
         for i in range(transfers):
             # Loop to find a valid player to add
@@ -941,7 +954,7 @@ class fpl():
                 # Failed to find valid player - Add last player
                 team.append(player)
 
-        transferpattern = fpl.getrandompattern()
+        transferpattern = fpl.getrandompattern(saved_free_transfers)
         #if transfersavailable == 1:
         #    transferpattern = transferpatternsone[random.randint(0,len(transferpatternsone)-1)]
         #else:
@@ -1036,7 +1049,19 @@ class fpl():
         return True
 
     @staticmethod
-    def transfer(team,week,playerindex,display,boostweek,tcweek,aooweek):
+    def validteam_for_mode(team, scenario=None):
+        if scenario is None:
+            return fpl.validteam(team)
+
+        from scenario import validate_current_squad
+        try:
+            validate_current_squad(team[:15])
+            return True
+        except ValueError:
+            return False
+
+    @staticmethod
+    def transfer(team,week,playerindex,display,boostweek,tcweek,aooweek,scenario=None):
 
         transferplayer = team[playerindex]
         transfertypeindex = playerindex - 15
@@ -1088,7 +1113,7 @@ class fpl():
 
             # Check if team is valid and score team
 
-            if fpl.validteam(newteam[:15]) == False:
+            if fpl.validteam_for_mode(newteam[:15], scenario=scenario) == False:
                 if display == True:
                     print("Invalid Team")
                 continue
@@ -1264,10 +1289,10 @@ class fpl():
 
     # Produce a score for a team
     @staticmethod
-    def scoreteam(team,display=False):
+    def scoreteam(team,display=False,scenario=None):
 
         # Check it's a valid team to score
-        if fpl.validteam(team) == False:
+        if fpl.validteam_for_mode(team, scenario=scenario) == False:
             #fpl.printteam(team[:-2],True)
             #print("Invalid team")
             return 0
@@ -1284,7 +1309,10 @@ class fpl():
         playerindex = 15
         wcindex = playerindex + transferweeks + hit
 
-        fpl.bank = budget - fpl.teamvalue(team)
+        if scenario is None:
+            fpl.bank = budget - fpl.teamvalue(team)
+        else:
+            fpl.bank = scenario.bank
 
         points = 0
         for week in range(1,forecastweeks+1):
@@ -1292,20 +1320,20 @@ class fpl():
             pickedteam = []
             typecount = [0,0,0,0]
 
-            if week <= transferweeks and week != 1: # Dont transfer first week for new team generation.
+            if week <= transferweeks and (week != 1 or scenario is not None): # Dont transfer first week for new team generation.
                 if week == wcweek and wildcardchip == True:
                     if week != forecastweeks:
                         if team[transferpatternslot][week] == 2:
                             team[transferpatternslot][week] = 1
                     for i in range(0,15):
-                        team = fpl.transfer(team,week,wcindex,False,boostweek,tcweek,aooweek)
+                        team = fpl.transfer(team,week,wcindex,False,boostweek,tcweek,aooweek,scenario=scenario)
                         wcindex += 1
                 else:
                     transfers = transferpattern[week-1]
                     if hit != 0 and week == 1:
                         transfers += hit
                     for i in range(0,transfers):
-                        team = fpl.transfer(team,week,playerindex,False,boostweek,tcweek,aooweek)
+                        team = fpl.transfer(team,week,playerindex,False,boostweek,tcweek,aooweek,scenario=scenario)
                         playerindex += 1
 
             # Sort the team by week points. Highest to Lowest

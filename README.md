@@ -6,25 +6,58 @@ The project imports fplreview.com player projection exports and searches for a h
 
 ## Quick start
 
+For a GW1 fresh-squad search, run with a GW1 projection export:
+
 ```sh
-python3 code/GA.py
+python3 code/GA.py --gameweek 1
 ```
 
-The default run preserves the original production-sized search settings. For a
-short deterministic development run, pass explicit controls:
+For a normal non-GW1 planning run, provide the current squad situation as a scenario file:
 
 ```sh
-python3 code/GA.py --input tests/fixtures/fplreview_golden.csv --population 6 --generations 2 --seed 7
+python3 code/GA.py --input data/fplreview.csv --gameweek 3 --scenario data/my-scenario.json
+```
+
+For a short deterministic development run, pass explicit controls and a test/demo scenario:
+
+```sh
+python3 code/GA.py --input tests/fixtures/fplreview_golden.csv --gameweek 3 --scenario examples/scenario_template.json --population 6 --generations 2 --seed 7
 ```
 
 Useful runtime options include:
 
 - `--input`: fplreview CSV export path
+- `--scenario`: JSON file with current squad, bank, saved free transfers, and matching gameweek
 - `--population`: GA population size
 - `--generations`: maximum generation count
 - `--seed`: random seed for reproducible runs
 - `--gameweek`: first gameweek projection column to load
 - `--forecastweeks`: number of gameweeks to load
+
+GW1 can run without a scenario because FPLgen is choosing a fresh starting squad. Runs after GW1 require a scenario file so the optimizer starts from the actual owned squad instead of inventing a new one. The scenario `gameweek` must match `--gameweek`; the CLI remains the runtime control, and the scenario field catches stale files.
+
+## Scenario files
+
+Scenario files describe FPL situation only:
+
+```json
+{
+  "gameweek": 3,
+  "bank": 0.7,
+  "saved_free_transfers": 2,
+  "current_squad": [201, 202, 204, 205, 206, 207, 208, 211, 212, 213, 214, 215, 218, 219, 220]
+}
+```
+
+Use `examples/scenario_template.json` as an editable starting point. Replace the player IDs with the 15 FPL IDs for the real current squad, set `bank` as the displayed decimal amount, and set `saved_free_transfers` to the available free transfers.
+
+To generate a valid test/demo scenario from a projection CSV:
+
+```sh
+python3 code/generate_scenario.py --input tests/fixtures/fplreview_golden.csv --output /tmp/scenario.json --gameweek 3 --bank 0.7 --saved-free-transfers 2 --seed 7
+```
+
+Generated scenarios are useful for tests and demos. They are not live FPL team sync and should not be treated as recommended manager squads.
 
 ## Data files
 
@@ -50,7 +83,8 @@ python3 -m unittest discover -s tests
 The test suite includes two committed projection fixtures:
 
 - `tests/fixtures/fplreview_golden.csv`: synthetic validation data that checks
-  import, known legal squad scoring, and a tiny seeded GA smoke path.
+  import, known legal squad scoring, existing-squad scenarios, and a tiny
+  seeded GA smoke path.
 - `tests/fixtures/fplkiwi_historical.csv`: a historical theFPLkiwi
   projection-row corpus converted to fplreview-style columns for realistic
   import, squad-scoring, and bounded runner-path coverage.
